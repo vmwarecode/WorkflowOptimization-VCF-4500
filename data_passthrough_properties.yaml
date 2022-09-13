@@ -1,0 +1,10 @@
+data_passthrough: true
+vxrail_versions:
+  - version: "7.0.202"
+    path: "sampleJsons/vcf4300.json"
+  - version: "7.0.241"
+    path: "sampleJsons/vcf4310.json"
+  - version: "7.0.320"
+    path: "sampleJsons/vcf4400.json"
+  - version: "7.0.400"
+    path: "sampleJsons/vcf4500.json"

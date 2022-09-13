@@ -5,20 +5,28 @@ import functools
 import json
 import os
 import re
+import requests
 import subprocess
+import yaml
+from yaml.loader import SafeLoader
+from utils.utils import Utils
 
 __author__ = 'Hong.Yuan'
 
+MANAGMENT = 'MANAGEMENT'
 
 class VxRailJsonConverter:
     def __init__(self, args):
         self.description = "VxRail Manager JSON file conversion"
+        self.utils = Utils(args)
         self.cluster_name = None
         self.vds_pg_map = {}
         self.vxm_payload = None
         self.host_spec = None
         self.error_message = []
         self.vxrail_config = None
+        self.vxrm_version = None
+        self.hostname = args[0]
 
     def __ip_comparator(self, ip1, ip2):
         ipsegs1 = ip1.split('.')
@@ -110,7 +118,7 @@ class VxRailJsonConverter:
                 res = False
         return res
 
-    def parse(self, jsonfile, is_primary, existing_vcenters_fqdn=None):
+    def parse(self, selected_domain_id, jsonfile, is_primary, existing_vcenters_fqdn=None):
         if not os.path.exists(jsonfile):
             self.__log_error("VxRail JSON file doesn't exists at {}".format(jsonfile))
         else:
@@ -125,7 +133,7 @@ class VxRailJsonConverter:
                     self.__convert_vcenter_spec(existing_vcenters_fqdn)
                 else:
                     self.__validate_vcenter_vc_name_or_ip(existing_vcenters_fqdn)
-                self.__convert_vxm_payload()
+                self.__convert_vxm_payload(selected_domain_id)
                 self.__collect_pg_names()
                 self.__convert_host_spec()
             except Exception as e:
@@ -348,7 +356,50 @@ class VxRailJsonConverter:
             "VMOTION": self.__get_pg_name("VMOTION")
         }
 
-    def __convert_vxm_payload(self):
+    #This will compare the vxrail first run json with sample json based on vcf version
+    def compare_json(self, vxrail_mapping, selected_domain_id):
+        self.get_vxrm_version(selected_domain_id)
+        for value in vxrail_mapping:
+            if self.vxrm_version == value['version']:
+                file_loc = value['path']
+                with open(file_loc) as fp:
+                    json_spec = json.load(fp)
+                sample_json = json_spec  #old
+                input_json = self.vxrail_config #new
+                self.json_diff(sample_json, input_json, '')
+
+    """
+        This is a recursive function to find difference between two dictionaries.
+        It finds out the properties which are there in input_json(json provided by user) but not in sample_json
+        (sample json for a particular vxrail version).
+        It checks the properties recursively.
+        prev_key stores the hierarchy of the property which is there in input_json but not sample_json
+        Ex. vcenter.accounts implies new property found at input_json["vcenter"]["accounts"]
+    """
+    def json_diff(self, sample_json, input_json, prev_key):
+        cur_diff_list = []
+        for k in input_json.keys() :
+            cur_key = k if prev_key == '' else prev_key + '.' + k
+            if k not in sample_json.keys():
+                dtype = self.find_dtype(input_json[k])
+                cur_diff_list.append({'attributeName':k, 'value':input_json[k], 'datatype':dtype})
+            elif type(input_json[k]) is dict : # When a new attribute is found in input_json & is of type dict
+                self.json_diff(sample_json[k], input_json[k], cur_key)
+        if cur_diff_list:
+            if "contextWithKeyValuePair" not in self.vxm_payload:
+                self.vxm_payload["contextWithKeyValuePair"] = {}
+            self.vxm_payload["contextWithKeyValuePair"][prev_key] = cur_diff_list
+
+    def find_dtype(self, x):
+        if isinstance(x, bool):
+            dtype = "BOOLEAN"
+        elif isinstance(x, int):
+            dtype = "INTEGER"
+        else :
+            dtype = "STRING"
+        return dtype
+
+    def __convert_vxm_payload(self, selected_domain_id):
         self.vxm_payload = {
             "rootCredentials": {
                 "credentialType": "SSH",
@@ -378,6 +429,19 @@ class VxRailJsonConverter:
             "sslThumbprint": "",  # leave it as empty
             "sshThumbprint": ""  # leave it as empty
         }
+
+        properties_file = "data_passthrough_properties.yaml"
+        if os.path.exists(properties_file):
+            with open(properties_file) as f:
+                try:
+                    properties = yaml.load(f, Loader = SafeLoader)
+                    if properties is not None:
+                        if "data_passthrough" in properties:
+                            if properties["data_passthrough"]:
+                                self.compare_json(properties['vxrail_versions'], selected_domain_id)
+                except yaml.YAMLError as e:
+                    self.utils.printRed("Error parsing yaml file " + properties_file)
+                    exit(1)
 
         cluster_type = self.__get_attr_value(self.vxrail_config, ["global", "cluster_type"])
         vsan_vlan = self.__get_vlan("VSAN")
@@ -409,6 +473,37 @@ class VxRailJsonConverter:
         ipseg = mgmt_network["gateway"].split(".")
         mgmt_network["subnet"] = "{}.{}.{}.0/{}".format(ipseg[0], ipseg[1], ipseg[2], self.__netmask_to_cidr(mgmt_network["mask"]))
         self.vxm_payload["networks"].append(mgmt_network)
+
+    # Find VxRail Manager version for selected domain
+    def get_vxrm_version(self, selected_domain_id):
+        domain_id = None
+        default_cluster_id = None
+
+        if selected_domain_id is not None:
+            domain_id = selected_domain_id
+        else:
+            domains_url = 'https://' + self.hostname + '/v1/domains'
+            domains = self.utils.get_request(domains_url)
+            for domain in domains['elements']:
+                if domain['type'] == MANAGMENT:
+                    domain_id = domain['id']
+
+        get_cluster_url = 'http://' + self.hostname + '/inventory/clusters'
+        header = {'Content-Type': 'application/json'}
+        response = requests.get(get_cluster_url, headers=header, verify=False)
+        if response.status_code == 200:
+            data = json.loads(response.text)
+            for cluster in data:
+                if cluster['domainId'] == domain_id and cluster['isDefault']:
+                    default_cluster_id = cluster['id']
+        else:
+            self.utils.printRed("Error executing API: {}, status code: {}".format(url, response.status_code))
+            exit(1)
+
+        vxrm_url = 'https://' + self.hostname + '/v1/vxrail-managers?domainID=' + domain_id + '&clusterID' + default_cluster_id
+        vxrm_details = self.utils.get_request(vxrm_url)
+        for vxrm in vxrm_details['elements']:
+            self.vxrm_version = vxrm['version'].split("-")[0]
 
     def get_vxm_payload(self):
         return self.vxm_payload

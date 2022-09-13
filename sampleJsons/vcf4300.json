@@ -1,0 +1,86 @@
+{
+  "version": "",
+  "global": {
+    "cluster_management_netmask": "",
+    "cluster_management_gateway": "",
+    "cluster_type": "",
+    "cluster_vsan_netmask": "",
+    "cluster_vmotion_netmask": "",
+    "ntp_servers": [""],
+    "is_internal_dns": false,
+    "dns_servers": [""],
+    "syslog_servers": [],
+    "top_level_domain": ""
+  },
+  "hosts": [
+    {
+      "host_psnt": "",
+      "hostname": "",
+      "accounts": {
+        "root": {
+          "username": "",
+          "password": ""
+        },
+        "management": {
+          "username": "",
+          "password": ""
+        }
+      },
+      "geo_location": {
+        "rack_name": "",
+        "position": ""
+      },
+      "network": [
+        {
+          "type": "",
+          "ip": ""
+        }
+      ]
+    }
+  ],
+  "vcenter": {
+    "cluster_name": "",
+    "customer_supplied": true,
+    "customer_supplied_vc_name_or_ip": "",
+    "datacenter_name": "",
+    "accounts": {
+      "administrator": {
+        "username": "",
+        "password": ""
+      },
+      "management": {
+        "username": "",
+        "password": ""
+      }
+    }
+  },
+  "network": {
+    "nic_profile": "",
+    "management_portgroup_binding_type": "",
+    "systemvm_portgroup_binding_type": "",
+    "vds": [
+      {
+        "portgroups": [
+          {
+            "type": "",
+            "vlan_id": 0
+          }
+        ]
+      }
+    ]
+  },
+  "vxrail_manager": {
+    "name": "",
+    "ip": "",
+    "accounts": {
+      "root": {
+        "username": "",
+        "password": ""
+      },
+      "service": {
+        "username": "",
+        "password": ""
+      }
+    }
+  }
+}

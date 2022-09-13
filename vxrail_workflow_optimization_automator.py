@@ -1,3 +1,4 @@
+
 # Copyright 2021 VMware, Inc.  All rights reserved. -- VMware Confidential
 # Description: Add Domain/Add Cluster using Workflow Optimization
 
@@ -384,8 +385,9 @@ class VxRailWorkflowOptimizationAutomator:
     # --------- Hong Test ------------------------------------------------------------
     def get_specs_from_vxrail_json(self, selected_domain_id, is_primary=True, existing_vcenters_fqdn=None):
         print(*self.two_line_separator, sep='\n')
+
         json_location = input("\033[1m Please enter VxRail JSON location: \033[0m")
-        error_msgs = self.converter.parse(json_location, is_primary, existing_vcenters_fqdn)
+        error_msgs = self.converter.parse(selected_domain_id, json_location, is_primary, existing_vcenters_fqdn)
         if error_msgs and len(error_msgs) > 0:
             self.utils.printRed("Find following errors:")
             for err in error_msgs:
