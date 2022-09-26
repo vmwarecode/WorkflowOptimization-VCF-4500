@@ -10,7 +10,9 @@
     "is_internal_dns": false,
     "dns_servers": [""],
     "syslog_servers": [],
-    "top_level_domain": ""
+    "top_level_domain": "",
+    "ip_version": "",
+    "ha_isolation_addresses": []
   },
   "hosts": [
     {

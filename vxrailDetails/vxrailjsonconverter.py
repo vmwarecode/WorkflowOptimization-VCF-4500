@@ -382,7 +382,8 @@ class VxRailJsonConverter:
             cur_key = k if prev_key == '' else prev_key + '.' + k
             if k not in sample_json.keys():
                 dtype = self.find_dtype(input_json[k])
-                cur_diff_list.append({'attributeName':k, 'value':input_json[k], 'datatype':dtype})
+                if input_json[k] and  dtype != 'UNSUPPORTED':
+                    cur_diff_list.append({'attributeName':k, 'value':input_json[k], 'datatype':dtype})
             elif type(input_json[k]) is dict : # When a new attribute is found in input_json & is of type dict
                 self.json_diff(sample_json[k], input_json[k], cur_key)
         if cur_diff_list:
@@ -391,11 +392,12 @@ class VxRailJsonConverter:
             self.vxm_payload["contextWithKeyValuePair"][prev_key] = cur_diff_list
 
     def find_dtype(self, x):
+        dtype = 'UNSUPPORTED'
         if isinstance(x, bool):
             dtype = "BOOLEAN"
         elif isinstance(x, int):
             dtype = "INTEGER"
-        else :
+        elif isinstance(x, str):
             dtype = "STRING"
         return dtype
 
