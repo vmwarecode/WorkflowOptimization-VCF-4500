@@ -2,6 +2,7 @@
 # Description: VxRail Json Converter
 
 import functools
+import ipaddress
 import json
 import os
 import re
@@ -472,8 +473,10 @@ class VxRailJsonConverter:
             "mask": self.__get_attr_value(self.vxrail_config, ["global", "cluster_management_netmask"]),
             "gateway": self.__get_attr_value(self.vxrail_config, ["global", "cluster_management_gateway"])
         }
-        ipseg = mgmt_network["gateway"].split(".")
-        mgmt_network["subnet"] = "{}.{}.{}.0/{}".format(ipseg[0], ipseg[1], ipseg[2], self.__netmask_to_cidr(mgmt_network["mask"]))
+        try:
+            mgmt_network["subnet"] = str(ipaddress.IPv4Network((mgmt_network["gateway"], mgmt_network["mask"]), strict=False))
+        except Exception as e:
+            self.__log_error("Please check provided management gateway and netmask are valid")
         self.vxm_payload["networks"].append(mgmt_network)
 
     # Find VxRail Manager version for selected domain

@@ -272,11 +272,9 @@ class VxRailWorkflowOptimizationAutomator:
             data = json.loads(response.text)
             for host in data:
                 if host['clusterId'] == default_cluster_id:
-                    if 'subnet' in host:
-                        host_ip = host['privateIpAddress']
-                        host_ip_modified = host_ip[:host_ip.rfind('.') + 1] + '0'
-                        mgmt_cidr = ipaddress.IPv4Interface(host_ip_modified + '/' + host['subnet'])
-                        mgmt_network_obj['subnet'] = mgmt_cidr.with_prefixlen
+                    if 'subnet' in host and 'gateway' in host:
+                        mgmt_network_obj['subnet'] = str(ipaddress.IPv4Network((host['gateway'], host['subnet']),
+                                                                               strict=False))
                         mgmt_network_obj['gateway'] = host['gateway']
                         mgmt_network_obj['mask'] = host['subnet']
                         break
