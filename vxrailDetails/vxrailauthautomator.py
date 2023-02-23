@@ -63,7 +63,7 @@ class VxRailAuthAutomator:
         if vsan_network_obj is not None:
             network_payload.append(vsan_network_obj)
 
-        if mgmt_network_details and ('vlanId' in mgmt_network_details) and ('subnet' in mgmt_network_details)\
+        if mgmt_network_details and ('vlanId' in mgmt_network_details) and ('subnet' in mgmt_network_details) \
                 and ('mask' in mgmt_network_details) and ('gateway' in mgmt_network_details):
             self.utils.printYellow("** By default the tool takes Management domain mgmt network for Create Domain and "
                                    "Primary cluster mgmt network for Create Cluster")

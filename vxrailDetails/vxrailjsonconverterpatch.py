@@ -86,8 +86,12 @@ class VxRailJsonConverterPatch:
             vcenter_spec = self.converter.get_vcenter_spec()
             print(*self.two_line_separator, sep='\n')
             vcenter_spec['networkDetailsSpec']['gateway'] = \
-                self.utils.valid_input("\033[1m Enter Gateway IP address for vcenter {}: \033[0m"
+                self.utils.valid_input("\033[1m Enter Gateway IP address for vCenter {}: \033[0m"
                                        .format(vcenter_spec['networkDetailsSpec']['dnsName']), None,
+                                       self.utils.valid_ip)
+            vcenter_spec['networkDetailsSpec']['subnetMask'] = \
+                self.utils.valid_input("\033[1m Enter Subnet Mask for vCenter {}(255.255.255.0): \033[0m"
+                                       .format(vcenter_spec['networkDetailsSpec']['dnsName']), "255.255.255.0",
                                        self.utils.valid_ip)
             while True:
                 vcenter_password = self.utils.handle_password_input("Enter vCenter {} root password:"

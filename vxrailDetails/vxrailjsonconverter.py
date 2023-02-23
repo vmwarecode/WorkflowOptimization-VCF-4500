@@ -308,9 +308,7 @@ class VxRailJsonConverter:
                 self.vcenter_spec["name"] = fqdn.split(".")[0].lower()
                 self.vcenter_spec["networkDetailsSpec"] = {
                     "ipAddress": address,
-                    "dnsName": fqdn,
-                    "subnetMask": self.__get_attr_value(self.vxrail_config,
-                                                        ["global", "cluster_management_netmask"])
+                    "dnsName": fqdn
                 }
                 self.vcenter_spec["rootPassword"] = ""  # needs to check where this come from
                 datacenter_name = self.__get_attr_value(self.vxrail_config, ["vcenter", "datacenter_name"])
