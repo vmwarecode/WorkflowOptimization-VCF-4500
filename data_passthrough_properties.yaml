@@ -8,3 +8,7 @@ vxrail_versions:
     path: "sampleJsons/vcf4400.json"
   - version: "7.0.400"
     path: "sampleJsons/vcf4500.json"
+  - version: "7.0.410"
+    path: "sampleJsons/vcf4500.json"
+  - version: "7.0.411"
+    path: "sampleJsons/vcf4500.json"
